@@ -23,13 +23,10 @@ class _NegociosState extends State<Negocios> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('COBRANZAS')),
+      appBar: AppBar(title: Text('COBRANZAS'),
+          centerTitle: true,),
       body: Column(
         children: [
-          SizedBox(height: 8),
-          ElevatedButton(
-              onPressed: () => showNegocio(), child: Icon(Icons.add)),
-          // MOSTRAR LOS NEGOCIOS
           Expanded(
             child: GridView.builder(
                 padding: EdgeInsets.all(8),
@@ -43,20 +40,55 @@ class _NegociosState extends State<Negocios> {
                   final negocio = listaNegocios[index];
 
                   return GestureDetector(
-                    onTap: () => 
-                    Navigator.push(
-                      context, 
-                      MaterialPageRoute(
-                        builder:(_) => Clientes(
-                          negocioId: negocio['id'],
-                          nombreNegocio: negocio['name']
-                        ))),
-                    child: mostrarCardNegocios(negocio)
-                  );
+                      onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => Clientes(
+                                  negocioId: negocio['id'],
+                                  nombreNegocio: negocio['name']))),
+                      child: mostrarCardNegocios(negocio));
                 }),
           )
         ],
       ),
+      bottomNavigationBar: BottomAppBar(
+          color: Colors.white,
+          shape: CircularNotchedRectangle(),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              IconButton(
+                onPressed: () {},
+                icon: Icon(Icons.storefront),
+                tooltip: 'Inicio',
+              ),
+              SizedBox(
+                width: 40,
+              ),
+              IconButton(
+                onPressed: () {},
+                icon: Icon(Icons.settings),
+                tooltip: 'Configuración',
+              )
+            ],
+          )),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(top: 50.0),
+        child: SizedBox(
+          width: 90,
+          height: 75,
+          
+          child: FloatingActionButton(
+            onPressed: () {
+              showNegocio();
+            },
+            child: Icon(Icons.add, size: 40),
+
+            tooltip: 'Agregar',
+          ),
+        ),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
   }
 
@@ -64,8 +96,7 @@ class _NegociosState extends State<Negocios> {
     await dbHelper.addNegocio(nombre);
     mostrarNegocios();
   }
-  
-  
+
   void mostrarNegocios() async {
     final datos = await dbHelper.mostrarNegocios();
     try {

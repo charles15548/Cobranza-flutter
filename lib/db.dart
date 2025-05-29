@@ -33,8 +33,36 @@ class DatabaseHelper {
             FOREIGN KEY (cliente_id) REFERENCES clientes(id)
           )
         ''');
-    }, version: 3);
+
+
+        await db.execute('''
+          CREATE TABLE numeroMes(
+            id INTEGER PRIMARY KEY,
+            mes TEXT
+          )
+        ''');
+
+
+        await db.rawInsert('''
+          INSERT INTO numeroMes(id, mes)
+          VALUES
+            (1,"Ene"),
+            (2,"Feb"),
+            (3,"Mar"),
+            (4,"Abr"),
+            (5,"May"),
+            (6,"Jun"),
+            (7,"Jul"),
+            (8,"Ago"),
+            (9,"Sep"),
+            (10,"Oct"),
+            (11,"Nov"),
+            (12,"Dic")
+      
+          ''');
+    }, version: 4);
   }
+
 
   /*
 
@@ -61,7 +89,7 @@ class DatabaseHelper {
 
   /*
 
-    --  CRUD NEGOCIO  --
+    --  CRUD CLIENTE  --
          
   */
 
@@ -89,19 +117,22 @@ class DatabaseHelper {
 
   */
 
-
-/*
-
-    SELECT clientes.id, clientes.nombre, clientes.negocio_id, pagos.mes, pagos.monto
-    FROM clientes
-    LEFT JOIN pagos ON pagos.cliente_id = clientes.id AND pagos.anio = ?
-    WHERE clientes.negocio_id = ? AND
-    clientes.id = ?
-    ORDER BY clientes.id, pagos.mes
-
-  */
-
   Future<List<Map<String, dynamic>>> obtenerPagosPorClienteYAnio(
+      int mesId, int anio, int clienteId) async {
+    final db = await opendatabase();
+
+    return await db.rawQuery('''
+    SELECT id, mes, monto
+    FROM pagos
+    WHERE 
+      mes = ? AND
+      anio = ? AND
+      cliente_id = ? 
+  ''', [mesId, anio, clienteId]);
+
+  }
+
+  Future<List<Map<String, dynamic>>> obtenerPagosPorClienteYAnioTodosLosMeses(
       int anio, int clienteId) async {
     final db = await opendatabase();
 
@@ -111,9 +142,8 @@ class DatabaseHelper {
     WHERE 
       anio = ? AND
       cliente_id = ? 
-    ORDER BY anio, mes
-  ''', [anio, clienteId]);
-    
+  ''', [ anio, clienteId]);
+
   }
 
   Future<void> addPagosPorCliente(
@@ -128,4 +158,25 @@ class DatabaseHelper {
     await db.insert('pagos', values,
         conflictAlgorithm: ConflictAlgorithm.replace);
   }
+  
+  Future<void> updatePagosPorCliente(
+      int idPago, double monto) async {
+    final db = await opendatabase();
+    final values = {
+      'monto': monto,
+    };
+    await db.update('pagos', values,
+          where:  'id = ?',
+          whereArgs: [idPago]);
+  }
+
+  
+  /* CUADRICULA MES */
+
+  Future<List<Map<String,dynamic>>> obtenerCuadricula() async {
+    final db = await opendatabase();
+    final data = await db.query('numeroMes');
+    return data;
+  }
 }
+
