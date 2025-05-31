@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:negocio/clientes.dart';
 import 'package:negocio/db.dart';
+import 'package:negocio/footer.dart';
 
 class Negocios extends StatefulWidget {
   const Negocios({super.key});
@@ -13,6 +15,7 @@ class _NegociosState extends State<Negocios> {
   final TextEditingController nombreNegocio = TextEditingController();
   final dbHelper = DatabaseHelper();
   List<Map<String, dynamic>> listaNegocios = [];
+  String editAdd = '';
 
   @override
   void initState() {
@@ -23,68 +26,75 @@ class _NegociosState extends State<Negocios> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('COBRANZAS'),
-          centerTitle: true,),
-      body: Column(
-        children: [
-          Expanded(
-            child: GridView.builder(
-                padding: EdgeInsets.all(8),
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2, // dos por fila
-                  crossAxisSpacing: 2,
-                  mainAxisExtent: 100,
+      backgroundColor: const Color.fromARGB(255, 123, 207, 255),
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar(
+            floating: true,
+            snap: true,
+            expandedHeight: 90,
+            backgroundColor: const Color.fromARGB(255, 0, 0, 0),
+            elevation: 0,
+            flexibleSpace: FlexibleSpaceBar(
+              title: Text(
+                'Cobranzas',
+                style:
+                    TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              ),
+              centerTitle: true,
+              background: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Color.fromARGB(255, 27, 105, 251),
+                      Color.fromARGB(255, 65, 160, 255),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
                 ),
-                itemCount: listaNegocios.length,
-                itemBuilder: (context, index) {
-                  final negocio = listaNegocios[index];
-
-                  return GestureDetector(
-                      onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) => Clientes(
-                                  negocioId: negocio['id'],
-                                  nombreNegocio: negocio['name']))),
-                      child: mostrarCardNegocios(negocio));
-                }),
-          )
+              ),
+            ),
+          ),
+          SliverList(
+            delegate: SliverChildBuilderDelegate((context, index) {
+              final negocio = listaNegocios[index];
+              return GestureDetector(
+                  onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => Clientes(
+                              negocioId: negocio['id'],
+                              nombreNegocio: negocio['name']))),
+                  child: SizedBox(
+                      height: 100, child: mostrarCardNegocios(negocio)));
+            }, childCount: listaNegocios.length),
+          ),
         ],
       ),
-      bottomNavigationBar: BottomAppBar(
-          color: Colors.white,
-          shape: CircularNotchedRectangle(),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              IconButton(
-                onPressed: () {},
-                icon: Icon(Icons.storefront),
-                tooltip: 'Inicio',
-              ),
-              SizedBox(
-                width: 40,
-              ),
-              IconButton(
-                onPressed: () {},
-                icon: Icon(Icons.settings),
-                tooltip: 'Configuración',
-              )
-            ],
-          )),
+      bottomNavigationBar: AppFooter(),
+
+
+
+
+
+
+
       floatingActionButton: Padding(
         padding: const EdgeInsets.only(top: 50.0),
         child: SizedBox(
           width: 90,
-          height: 75,
-          
+          height: 90,
           child: FloatingActionButton(
             onPressed: () {
-              showNegocio();
+              editAdd = 'Guardar';
+              showNegocio(editAdd, 0);
             },
-            child: Icon(Icons.add, size: 40),
-
+            backgroundColor: const Color.fromARGB(255, 66, 140, 250),
             tooltip: 'Agregar',
+            shape: CircleBorder(),
+            child: Icon(Icons.add,
+                size: 40, color: const Color.fromARGB(255, 255, 255, 255)),
           ),
         ),
       ),
@@ -92,10 +102,175 @@ class _NegociosState extends State<Negocios> {
     );
   }
 
-  void agregarNegocio(String nombre) async {
-    await dbHelper.addNegocio(nombre);
-    mostrarNegocios();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  void showAlertaEliminar(int idshow) {
+    showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+              title: Text('Se perderan los datos del negocio'),
+              actions: [
+                TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: Text('Regresar')),
+                ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      eliminarNegocio(idshow);
+                    },
+                    child: Text('De acuerdo')),
+              ],
+            ));
   }
+
+  void showNegocio(String editAdd, int id, {String? nombreActual}) {
+    if (editAdd == 'Editar' && nombreActual != null) {
+      nombreNegocio.text = nombreActual;
+    } else {
+      nombreNegocio.clear();
+    }
+    showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+              title: Text('$editAdd Negocio'),
+              content: TextField(
+                controller: nombreNegocio,
+                decoration: InputDecoration(
+                    labelText: 'Nombre',
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12))),
+                maxLength: 70,
+                inputFormatters: [
+                  LengthLimitingTextInputFormatter(70),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  style: TextButton.styleFrom(
+                    backgroundColor: Color(0xFFF5F6FA),
+                    foregroundColor: Colors.black87,
+                    minimumSize: Size(110, 44),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  onPressed: () => Navigator.pop(context),
+                  child: Text('Cancelar',
+                      style: TextStyle(fontWeight: FontWeight.w600)),
+                ),
+                ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      if (nombreNegocio.text.isNotEmpty) {
+                        if (editAdd == 'Guardar' && id == 0) {
+                          agregarNegocio(nombreNegocio.text.trim());
+                        } else if (editAdd == 'Editar') {
+                          editarNegocio(id, nombreNegocio.text.trim());
+                        }
+                      } else {
+                        // Mostrar un mensaje de error
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('El nombre no puede estar vacío'),
+                            duration: Duration(seconds: 3),
+                          ),
+                        );
+                      }
+
+                      nombreNegocio.clear();
+                    },
+                    child: Text('Guardar')),
+              ],
+            ));
+  }
+
+  Widget mostrarCardNegocios(Map<String, dynamic> negocio) {
+    return Card(
+      margin: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      color: const Color.fromARGB(243, 255, 255, 255),
+      elevation: 1,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
+      child: Row(
+        children: [
+          SizedBox(width: 10),
+          Container(
+            width: 54,
+            height: 54,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: const Color.fromARGB(255, 205, 227, 255),
+            ),
+            child: Center(
+              child: Icon(
+                Icons.business,
+                color: const Color.fromARGB(255, 0, 12, 120),
+                size: 32,
+              ),
+            ),
+          ),
+          SizedBox(width: 10),
+          Expanded(
+            child: Padding(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 10.0, vertical: 3.0),
+              child: Text(
+                negocio['name'],
+                style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+          PopupMenuButton<String>(
+            onSelected: (value) {
+              if (value == 'edit') {
+                editAdd = 'Editar';
+                showNegocio(editAdd, negocio['id'],
+                    nombreActual: negocio['name']);
+              } else if (value == 'delete') {
+                showAlertaEliminar(negocio['id']);
+              }
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 'edit',
+                child: Row(
+                  children: [
+                    Icon(Icons.edit, color: Colors.blue),
+                    SizedBox(width: 10),
+                    Text('Editar'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'delete',
+                child: Row(
+                  children: [
+                    Icon(Icons.delete, color: Colors.red),
+                    SizedBox(width: 10),
+                    Text('Eliminar'),
+                  ],
+                ),
+              ),
+            ],
+            icon: Icon(Icons.more_vert),
+          )
+        ],
+      ),
+    );
+  }
+
+  /* CRUD NEGOCIO */
 
   void mostrarNegocios() async {
     final datos = await dbHelper.mostrarNegocios();
@@ -116,51 +291,18 @@ class _NegociosState extends State<Negocios> {
     }
   }
 
-  void showNegocio() {
-    showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-              title: Text('Agregar Negocio'),
-              content: TextField(
-                controller: nombreNegocio,
-                decoration: InputDecoration(labelText: 'Nombre'),
-              ),
-              actions: [
-                TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: Text('Cancelar')),
-                ElevatedButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      if (nombreNegocio.text.isNotEmpty) {
-                        agregarNegocio(nombreNegocio.text.trim());
-                      } else {
-                        // Mostrar un mensaje de error
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('El nombre no puede estar vacío'),
-                            duration: Duration(seconds: 2),
-                          ),
-                        );
-                      }
-
-                      nombreNegocio.clear();
-                    },
-                    child: Text('Guardar')),
-              ],
-            ));
+  void agregarNegocio(String nombre) async {
+    await dbHelper.addNegocio(nombre);
+    mostrarNegocios();
   }
 
-  Widget mostrarCardNegocios(Map<String, dynamic> negocio) {
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      child: Center(
-        child: Text(
-          negocio['name'],
-          style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
-        ),
-      ),
-    );
+  void editarNegocio(int id, String nombre) async {
+    await dbHelper.editNegocio(id, nombre);
+    mostrarNegocios();
+  }
+
+  void eliminarNegocio(int id) async {
+    await dbHelper.eliminarNegocioYClienteYPagos(id);
+    mostrarNegocios();
   }
 }

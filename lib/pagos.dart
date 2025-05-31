@@ -4,8 +4,10 @@ import 'package:negocio/db.dart';
 
 class Pagos extends StatefulWidget {
   final int clienteId;
+  final String clienteNombre;
   final int negocioId;
-  const Pagos({super.key, required this.clienteId, required this.negocioId});
+  
+  const Pagos({super.key, required this.clienteId,required this.clienteNombre, required this.negocioId});
 
   @override
   State<Pagos> createState() => _PagosState();
@@ -29,9 +31,7 @@ class _PagosState extends State<Pagos> {
 
   final dbHelper = DatabaseHelper();
 
-/*
-  METODOS CRUD
-  CARGAR
+/* METODOS CRUD CARGAR
 
 
   void cargarMesesCuadricula() async {
@@ -97,7 +97,7 @@ class _PagosState extends State<Pagos> {
   // ACTUALIZAR
   void actualizarPagoPorCliente(int idPago, double monto) async {
     await dbHelper.updatePagosPorCliente(idPago, monto);
-    // cargarPagosPorclientePorAnio();
+    
     cargarMesesCuadricula();
   }
 
@@ -105,7 +105,7 @@ class _PagosState extends State<Pagos> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Volver'),
+        title: Text(widget.clienteNombre),
       ),
       body:   Column(
         children: [
@@ -172,18 +172,24 @@ class _PagosState extends State<Pagos> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
+                          Icon(Icons.attach_money,
+                                  color: Colors.white, size: 21),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
+                            
                             children: [
-                              Icon(Icons.attach_money,
-                                  color: Colors.white, size: 21),
-                              SizedBox(width: 1),
                               //---------  monto   ----------
                               Text(
-                                monto.toString(),
+                                monto > 99999
+                                    ? monto.toStringAsFixed(0)
+                                    : monto.toStringAsFixed(1),
                                 style: TextStyle(
                                   color: Colors.white,
-                                  fontSize: 27,
+                                  fontSize: (monto < 99999)
+                                      ? 28
+                                      : (monto < 999999)
+                                          ? 24
+                                          : 22,
                                   fontWeight: FontWeight.bold,
                                 ),
                               )
@@ -225,12 +231,14 @@ class _PagosState extends State<Pagos> {
               content: TextField(
                 keyboardType: TextInputType.numberWithOptions(decimal: true),
                 inputFormatters: [
-                  FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}'))
+                  FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
+                  LengthLimitingTextInputFormatter(7),
                 ],
                 onChanged: (value) {
                   montoValue = double.tryParse(value);
                 },
                 decoration: InputDecoration(labelText: 'Monto'),
+                maxLength: 7,
               ),
               actions: [
                 TextButton(

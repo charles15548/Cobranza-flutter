@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:negocio/db.dart';
+import 'package:negocio/footer.dart';
 import 'package:negocio/pagos.dart';
 
 class Clientes extends StatefulWidget {
@@ -39,13 +41,26 @@ class _ClientesState extends State<Clientes> {
     nombreCliente.clear();
   }
 
-  void showAgregarCliente() {
+  void editarCliente(int id, String nombre) async {
+    await dbHelper.aditClientes(nombre, id);
+    cargarClientes();
+  }
+
+  void eliminarClienteYPagos(int id) async {
+    await dbHelper.eliminarClienteYPagos(id);
+    cargarClientes();
+  }
+
+  void showAgregarEditarCliente(int id, String nombreActual) {
+    nombreCliente.text = nombreActual;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         content: TextField(
           controller: nombreCliente,
           decoration: InputDecoration(labelText: 'Nombre del Cliente'),
+          maxLength: 60,
+          inputFormatters: [LengthLimitingTextInputFormatter(70)],
         ),
         actions: [
           TextButton(
@@ -53,7 +68,12 @@ class _ClientesState extends State<Clientes> {
           ElevatedButton(
               onPressed: () {
                 if (nombreCliente.text.isNotEmpty) {
-                  agregarClientesPorNegocio(nombreCliente.text.trim());
+                  if (id == 0) {
+                    agregarClientesPorNegocio(nombreCliente.text.trim());
+                  } else if (id > 0) {
+                    editarCliente(id, nombreCliente.text.trim());
+                  }
+
                   Navigator.pop(context);
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -70,35 +90,169 @@ class _ClientesState extends State<Clientes> {
     );
   }
 
+  void showEliminarCliente(int id, String cliente) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Eliminar Cliente'),
+        content: Text('¿Estás seguro de eliminar a ${cliente}?'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context), child: Text('Cancelar')),
+          ElevatedButton(
+              onPressed: () {
+                eliminarClienteYPagos(id);
+                Navigator.pop(context);
+              },
+              child: Text('Si, Eliminar'))
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Cliente de ${widget.nombreNegocio}'),
-      ),
-      body: ListView.builder(
-        itemCount: listaClientes.length,
-        itemBuilder: (context, index) {
-          final cliente = listaClientes[index];
-          return GestureDetector(
-            onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (_) => Pagos(
-                      clienteId: cliente['id'],
-                      negocioId: cliente['negocio_id'],
-                       ))),
-            child: ListTile(
-              leading: Icon(Icons.person),
-              title: Text(cliente['nombre']),
+      /*appBar: AppBar(
+        title: Text('${widget.nombreNegocio} - Cobranzas'),
+      ),*/
+      body: CustomScrollView(slivers: [
+        SliverAppBar(
+          floating: true,
+          snap: true,
+          expandedHeight: 120,
+          backgroundColor: const Color.fromARGB(
+              255, 26, 66, 97), //Color.fromARGB(255, 10, 26, 38),
+          elevation: 0,
+          iconTheme: IconThemeData(color: Colors.white),
+          flexibleSpace: FlexibleSpaceBar(
+            title: Text(
+              widget.nombreNegocio,
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              fontSize: (widget.nombreNegocio.length < 15) ? 20 :(widget.nombreNegocio.length <20) ? 17 :(widget.nombreNegocio.length <30) ? 15:(widget.nombreNegocio.length <50)?  13 : 12
+              ),
             ),
-          );
-        },
+            centerTitle: true,
+            background: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Color.fromARGB(255, 27, 105, 251),
+                    Color.fromARGB(255, 65, 160, 255),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
+            ),
+          ),
+        ),
+        listaClientes.isEmpty
+            ? SliverFillRemaining(
+                hasScrollBody: false,
+                child: Center(
+                  child: Text(
+                    'No hay clientes registrados',
+                    style: TextStyle(fontSize: 20, color: Colors.grey),
+                  ),
+                ),
+              )
+            : SliverList(
+                delegate: SliverChildBuilderDelegate((context, index) {
+                  final cliente = listaClientes[index];
+
+                  return Column(
+                    children: [
+                      ListTile(
+                        minVerticalPadding: 25,
+                        leading: CircleAvatar(
+                          backgroundColor:
+                              const Color.fromARGB(255, 36, 163, 236),
+                          radius: 28,
+                          child: Text(
+                            cliente['nombre']
+                                .toString()
+                                .substring(0, 1)
+                                .toUpperCase(),
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 20),
+                          ),
+                        ),
+                        title: Text(
+                          cliente['nombre'],
+                          style: TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        trailing: PopupMenuButton<String>(
+                          onSelected: (value) {
+                            if (value == 'edit') {
+                              showAgregarEditarCliente(
+                                  cliente['id'], cliente['nombre']);
+                            } else if (value == 'delete') {
+                              showEliminarCliente(
+                                  cliente['id'], cliente['nombre']);
+                            }
+                          },
+                          itemBuilder: (context) => [
+                            PopupMenuItem(value: 'edit', child: Text('Editar')),
+                            PopupMenuItem(
+                                value: 'delete', child: Text('Eliminar')),
+                          ],
+                        ),
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => Pagos(
+                              clienteId: cliente['id'],
+                              clienteNombre: cliente['nombre'],
+                              negocioId: cliente['negocio_id'],
+                            ),
+                          ),
+                        ),
+                      ),
+                      if (index < listaClientes.length - 1)
+                        Divider(
+                          thickness: 1,
+                          indent: 20,
+                          endIndent: 20,
+                          color: Colors.grey[300],
+                        )
+                    ],
+                  );
+                }, childCount: listaClientes.length),
+              ),
+      ]),
+      bottomNavigationBar: AppFooter(),
+
+
+
+
+
+
+
+
+
+
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(top: 50),
+        child: SizedBox(
+          width: 90,
+          height: 90,
+          child: FloatingActionButton(
+            onPressed: () {
+              showAgregarEditarCliente(0, '');
+            },
+            backgroundColor: const Color.fromARGB(255, 66, 140, 250), 
+            shape: CircleBorder(),
+            child: Icon(Icons.add,
+            size:40, color: const  Color.fromARGB(255, 255, 255, 255)),
+          ),
+        ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: showAgregarCliente,
-        child: Icon(Icons.add),
-      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
   }
 }

@@ -34,16 +34,14 @@ class DatabaseHelper {
           )
         ''');
 
-
-        await db.execute('''
+      await db.execute('''
           CREATE TABLE numeroMes(
             id INTEGER PRIMARY KEY,
             mes TEXT
           )
         ''');
 
-
-        await db.rawInsert('''
+      await db.rawInsert('''
           INSERT INTO numeroMes(id, mes)
           VALUES
             (1,"Ene"),
@@ -62,7 +60,6 @@ class DatabaseHelper {
           ''');
     }, version: 4);
   }
-
 
   /*
 
@@ -85,6 +82,41 @@ class DatabaseHelper {
 
     await db.insert('negocios', value,
         conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<void> editNegocio(int id, String nombre) async {
+    final db = await opendatabase();
+
+    final value = {
+      'name': nombre,
+    };
+
+    await db.update('negocios', value, where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<void> deleteNegocio(int id) async {
+    final db = await opendatabase();
+    await db.delete('negocios', where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<void> eliminarNegocioYClienteYPagos(int idNegocio) async {
+    final db = await opendatabase();
+
+    final clientes = await db.query(
+      'clientes',
+      columns: ['id'],
+      where: 'negocio_id = ?',
+      whereArgs: [idNegocio],
+    );
+
+    // recorremos los clientes
+    for (var cliente in clientes) {
+      final idCliente = cliente['id'] as int;
+      await eliminarClienteYPagos(idCliente);
+    }
+
+   
+    await db.delete('negocios', where: 'id = ?', whereArgs: [idNegocio]);
   }
 
   /*
@@ -111,6 +143,28 @@ class DatabaseHelper {
         conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
+  Future<void> aditClientes(String nombre, int id) async {
+    final db = await opendatabase();
+    final values = {
+      'nombre': nombre,
+    };
+    await db.update('clientes', values, where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<void> eliminarClienteYPagos(int idCliente) async {
+    final db = await opendatabase();
+    await db.delete(
+      'pagos',
+      where: 'cliente_id = ?',
+      whereArgs: [idCliente],
+    );
+    await db.delete(
+      'clientes',
+      where: 'id = ?',
+      whereArgs: [idCliente],
+    );
+  }
+
   /*
 
     -- CRUD PAGOS --
@@ -129,7 +183,6 @@ class DatabaseHelper {
       anio = ? AND
       cliente_id = ? 
   ''', [mesId, anio, clienteId]);
-
   }
 
   Future<List<Map<String, dynamic>>> obtenerPagosPorClienteYAnioTodosLosMeses(
@@ -142,8 +195,7 @@ class DatabaseHelper {
     WHERE 
       anio = ? AND
       cliente_id = ? 
-  ''', [ anio, clienteId]);
-
+  ''', [anio, clienteId]);
   }
 
   Future<void> addPagosPorCliente(
@@ -158,25 +210,20 @@ class DatabaseHelper {
     await db.insert('pagos', values,
         conflictAlgorithm: ConflictAlgorithm.replace);
   }
-  
-  Future<void> updatePagosPorCliente(
-      int idPago, double monto) async {
+
+  Future<void> updatePagosPorCliente(int idPago, double monto) async {
     final db = await opendatabase();
     final values = {
       'monto': monto,
     };
-    await db.update('pagos', values,
-          where:  'id = ?',
-          whereArgs: [idPago]);
+    await db.update('pagos', values, where: 'id = ?', whereArgs: [idPago]);
   }
 
-  
   /* CUADRICULA MES */
 
-  Future<List<Map<String,dynamic>>> obtenerCuadricula() async {
+  Future<List<Map<String, dynamic>>> obtenerCuadricula() async {
     final db = await opendatabase();
     final data = await db.query('numeroMes');
     return data;
   }
 }
-
