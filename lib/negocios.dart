@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:negocio/clientes.dart';
 import 'package:negocio/db.dart';
 import 'package:negocio/footer.dart';
+import 'package:negocio/moneda.dart';
+import 'package:provider/provider.dart';
 
 class Negocios extends StatefulWidget {
   const Negocios({super.key});
@@ -25,6 +27,7 @@ class _NegociosState extends State<Negocios> {
 
   @override
   Widget build(BuildContext context) {
+    final moneda = Provider.of<MoneyProvider>(context);
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 123, 207, 255),
       body: CustomScrollView(
@@ -37,7 +40,7 @@ class _NegociosState extends State<Negocios> {
             elevation: 0,
             flexibleSpace: FlexibleSpaceBar(
               title: Text(
-                'Cobranzas',
+                'Cobranzas : \$${moneda.moneda.toStringAsFixed(2)}',
                 style:
                     TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
               ),
@@ -56,30 +59,36 @@ class _NegociosState extends State<Negocios> {
               ),
             ),
           ),
-          SliverList(
-            delegate: SliverChildBuilderDelegate((context, index) {
-              final negocio = listaNegocios[index];
-              return GestureDetector(
-                  onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => Clientes(
-                              negocioId: negocio['id'],
-                              nombreNegocio: negocio['name']))),
-                  child: SizedBox(
-                      height: 100, child: mostrarCardNegocios(negocio)));
-            }, childCount: listaNegocios.length),
-          ),
+          listaNegocios.isEmpty
+              ? SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Center(
+                    child: Text(
+                      '''
+                      Registra tu Primer
+                             Negocio
+                      ''',
+                      style: TextStyle(fontSize: 22, color: Colors.grey),
+                    ),
+                  ),
+                )
+              : SliverList(
+                  delegate: SliverChildBuilderDelegate((context, index) {
+                    final negocio = listaNegocios[index];
+                    return GestureDetector(
+                        onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) => Clientes(
+                                    negocioId: negocio['id'],
+                                    nombreNegocio: negocio['name']))),
+                        child: SizedBox(
+                            height: 100, child: mostrarCardNegocios(negocio)));
+                  }, childCount: listaNegocios.length),
+                ),
         ],
       ),
       bottomNavigationBar: AppFooter(),
-
-
-
-
-
-
-
       floatingActionButton: Padding(
         padding: const EdgeInsets.only(top: 50.0),
         child: SizedBox(
@@ -101,20 +110,6 @@ class _NegociosState extends State<Negocios> {
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
   }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
   void showAlertaEliminar(int idshow) {
     showDialog(
@@ -293,6 +288,7 @@ class _NegociosState extends State<Negocios> {
 
   void agregarNegocio(String nombre) async {
     await dbHelper.addNegocio(nombre);
+    Provider.of<MoneyProvider>(context,listen: false).restar(100);
     mostrarNegocios();
   }
 

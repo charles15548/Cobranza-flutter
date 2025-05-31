@@ -1,4 +1,4 @@
-package com.example.negocio
+package com.cobrar.negocio
 
 import io.flutter.embedding.android.FlutterActivity
 

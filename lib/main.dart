@@ -1,8 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:negocio/moneda.dart';
 import 'package:negocio/negocios.dart';
+import 'package:provider/provider.dart';
 
 void main(List<String> args) {
-  runApp(MyApp());
+  WidgetsFlutterBinding.ensureInitialized();
+  await MobileAds.instance.initialize();
+
+
+  runApp(MultiProvider(
+    providers: [
+      ChangeNotifierProvider(create: (_) => MoneyProvider())
+    ]
+    ,child: MyApp()));
 }
 
 class MyApp extends StatefulWidget {
