@@ -4,6 +4,7 @@ import 'package:negocio/clientes.dart';
 import 'package:negocio/db.dart';
 import 'package:negocio/footer.dart';
 import 'package:negocio/moneda.dart';
+import 'package:negocio/mostrarMoneda.dart';
 import 'package:provider/provider.dart';
 
 class Negocios extends StatefulWidget {
@@ -18,6 +19,7 @@ class _NegociosState extends State<Negocios> {
   final dbHelper = DatabaseHelper();
   List<Map<String, dynamic>> listaNegocios = [];
   String editAdd = '';
+  final money = MoneyProvider();
 
   @override
   void initState() {
@@ -27,7 +29,6 @@ class _NegociosState extends State<Negocios> {
 
   @override
   Widget build(BuildContext context) {
-    final moneda = Provider.of<MoneyProvider>(context);
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 123, 207, 255),
       body: CustomScrollView(
@@ -35,12 +36,18 @@ class _NegociosState extends State<Negocios> {
           SliverAppBar(
             floating: true,
             snap: true,
-            expandedHeight: 90,
+            expandedHeight: 110,
             backgroundColor: const Color.fromARGB(255, 0, 0, 0),
             elevation: 0,
+            actions: [
+              Padding(
+                padding: const EdgeInsets.only(right: 20.0, top: 3.0),
+                child: Mostrarmoneda(),
+              )
+            ],
             flexibleSpace: FlexibleSpaceBar(
               title: Text(
-                'Cobranzas : \$${moneda.moneda.toStringAsFixed(2)}',
+                'Cobranzas',
                 style:
                     TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
               ),
@@ -287,13 +294,30 @@ class _NegociosState extends State<Negocios> {
   }
 
   void agregarNegocio(String nombre) async {
-    await dbHelper.addNegocio(nombre);
-    Provider.of<MoneyProvider>(context,listen: false).restar(100);
+    final monedaControl = Provider.of<MoneyProvider>(context, listen: false);
+    if (monedaControl.moneda <= 4) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('No tienes suficientes monedas.')),
+      );
+    } else {
+      monedaControl.restar(5);
+      await dbHelper.addNegocio(nombre);
+    }
     mostrarNegocios();
   }
 
   void editarNegocio(int id, String nombre) async {
-    await dbHelper.editNegocio(id, nombre);
+    final monedaControl =
+        Provider.of<MoneyProvider>(context, listen: false); //.restar(5);
+    if (monedaControl.moneda <= 4) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('No tienes suficientes monedas.')),
+      );
+    } else {
+      monedaControl.restar(5);
+      await dbHelper.editNegocio(id, nombre);
+    }
+
     mostrarNegocios();
   }
 

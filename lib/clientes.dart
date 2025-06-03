@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:negocio/anuncioBanner.dart';
 import 'package:negocio/db.dart';
 import 'package:negocio/footer.dart';
+import 'package:negocio/moneda.dart';
+import 'package:negocio/mostrarMoneda.dart';
 import 'package:negocio/pagos.dart';
+import 'package:provider/provider.dart';
 
 class Clientes extends StatefulWidget {
   final int negocioId;
@@ -32,17 +36,35 @@ class _ClientesState extends State<Clientes> {
   }
 
   void agregarClientesPorNegocio(String nombre) async {
-    await dbHelper.addClientesPorNegocio(
-      nombre,
-      widget.negocioId,
-    );
+    final monedaControl = Provider.of<MoneyProvider>(context, listen: false);
+    if (monedaControl.moneda <= 4) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('No tienes suficientes monedas.')),
+      );
+    } else {
+      monedaControl.restar(5);
+      await dbHelper.addClientesPorNegocio(
+        nombre,
+        widget.negocioId,
+      );
+    }
+
     cargarClientes();
     //cargarPagosPorclientePorAnio();
     nombreCliente.clear();
   }
 
   void editarCliente(int id, String nombre) async {
-    await dbHelper.aditClientes(nombre, id);
+    final monedaControl = Provider.of<MoneyProvider>(context, listen: false);
+    if (monedaControl.moneda <= 4) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('No tienes suficientes monedas.')),
+      );
+    } else {
+      monedaControl.restar(5);
+      await dbHelper.aditClientes(nombre, id);
+    }
+   
     cargarClientes();
   }
 
@@ -120,19 +142,32 @@ class _ClientesState extends State<Clientes> {
         SliverAppBar(
           floating: true,
           snap: true,
-          expandedHeight: 120,
+          expandedHeight: 110,
           backgroundColor: const Color.fromARGB(
               255, 26, 66, 97), //Color.fromARGB(255, 10, 26, 38),
           elevation: 0,
+          actions: [
+            Padding(
+              padding: const EdgeInsets.only(right: 20.0, top: 3.0),
+              child: Mostrarmoneda(),
+            )
+          ],
           iconTheme: IconThemeData(color: Colors.white),
           flexibleSpace: FlexibleSpaceBar(
             title: Text(
               widget.nombreNegocio,
               style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              fontSize: (widget.nombreNegocio.length < 15) ? 20 :(widget.nombreNegocio.length <20) ? 17 :(widget.nombreNegocio.length <30) ? 15:(widget.nombreNegocio.length <50)?  13 : 12
-              ),
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: (widget.nombreNegocio.length < 15)
+                      ? 20
+                      : (widget.nombreNegocio.length < 20)
+                          ? 17
+                          : (widget.nombreNegocio.length < 30)
+                              ? 15
+                              : (widget.nombreNegocio.length < 50)
+                                  ? 13
+                                  : 12),
             ),
             centerTitle: true,
             background: Container(
@@ -225,19 +260,17 @@ class _ClientesState extends State<Clientes> {
                 }, childCount: listaClientes.length),
               ),
       ]),
-      bottomNavigationBar: AppFooter(),
-
-
-
-
-
-
-
-
-
-
+      bottomNavigationBar: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Anunciobanner(idAnuncio: 'ca-app-pub-3940256099942544/6300978111'),
+          SizedBox(height: 15),
+          // Anunciobanner(idAnuncio: 'ca-app-pub-3503326553540884/1480397739'),  real
+          AppFooter(),
+        ],
+      ),
       floatingActionButton: Padding(
-        padding: const EdgeInsets.only(top: 50),
+        padding: const EdgeInsets.only(top: 150),
         child: SizedBox(
           width: 90,
           height: 90,
@@ -245,10 +278,10 @@ class _ClientesState extends State<Clientes> {
             onPressed: () {
               showAgregarEditarCliente(0, '');
             },
-            backgroundColor: const Color.fromARGB(255, 66, 140, 250), 
+            backgroundColor: const Color.fromARGB(255, 66, 140, 250),
             shape: CircleBorder(),
             child: Icon(Icons.add,
-            size:40, color: const  Color.fromARGB(255, 255, 255, 255)),
+                size: 40, color: const Color.fromARGB(255, 255, 255, 255)),
           ),
         ),
       ),

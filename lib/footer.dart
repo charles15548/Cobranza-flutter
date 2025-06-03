@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:negocio/negocios.dart';
 
 class AppFooter extends StatelessWidget {
   const AppFooter({super.key});
-
+/*
    void _showRewardedAd(BuildContext context) {
     RewardedAd.load(
       adUnitId: 'ca-app-pub-3503326553540884/6874164957', 
@@ -15,7 +14,7 @@ class AppFooter extends StatelessWidget {
           ad.show(
             onUserEarnedReward: (AdWithoutView ad, RewardItem reward) {
               // Aquí recompensa al usuario
-                Provider.of<MoneyProvider>(Context,listen: false).sumar(100);
+              Provider.of<MoneyProvider>(context,listen: false).sumar(100);
 
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(content: Text('¡Recompensa obtenida!')),
@@ -31,7 +30,7 @@ class AppFooter extends StatelessWidget {
       ),
     );
   }
-
+*/
   @override
   Widget build(BuildContext context) {
     return BottomAppBar(
@@ -54,7 +53,7 @@ class AppFooter extends StatelessWidget {
               width: 40,
             ),
             IconButton(
-              onPressed: () => _showRewardedAd(context),
+              onPressed: () {},//=> _showRewardedAd(context),
               icon: Icon(Icons.settings,size: 29,),
               tooltip: 'Configuración',
             )

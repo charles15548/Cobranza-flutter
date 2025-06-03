@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:negocio/anuncioBanner.dart';
 import 'package:negocio/db.dart';
+import 'package:negocio/moneda.dart';
+import 'package:negocio/mostrarMoneda.dart';
+import 'package:provider/provider.dart';
 
 class Pagos extends StatefulWidget {
   final int clienteId;
@@ -19,6 +24,7 @@ class _PagosState extends State<Pagos> {
     super.initState();
     // cargarPagosPorclientePorAnio();
     cargarMesesCuadricula();
+
   }
 
   int anioValue = DateTime.now().year;
@@ -34,29 +40,6 @@ class _PagosState extends State<Pagos> {
 /* METODOS CRUD CARGAR
 
 
-  void cargarMesesCuadricula() async {
-    final data = await dbHelper.obtenerCuadricula();
-    final Map<int, double> tempPagos = {};
-    final Map<int, int> listPagosInterno = {};
-
-    for (var mes in data) {
-      final pagos = await dbHelper.obtenerPagosPorClienteYAnio(
-          mes['id'], anioValue, widget.clienteId);
-
-      double valorMes = 0.0;
-      valorMes = pagos.isNotEmpty ? pagos[0]['monto'] : 0.0;
-      int pagoId = pagos.isNotEmpty ? pagos[0]['id'] : 0;
-
-      tempPagos[mes['id']] = valorMes;
-      listPagosInterno[mes['id']] = pagoId;
-    }
-
-    setState(() {
-      listaMeses = data;
-      pagosPorMes = tempPagos;
-      listapagos = listPagosInterno;
-    });
-  }
 */
   void cargarMesesCuadricula()async
   {
@@ -89,15 +72,29 @@ class _PagosState extends State<Pagos> {
 
   // CREAR
   void agregarPagoPorCliente(int mes, int anio, double monto) async {
-    await dbHelper.addPagosPorCliente(mes, anio, monto, widget.clienteId);
-    // cargarPagosPorclientePorAnio();
+    final monedaControl = Provider.of<MoneyProvider>(context, listen: false);
+    if (monedaControl.moneda <= 3) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('No tienes suficientes monedas.')),
+      );
+    } else {
+      monedaControl.restar(4);
+      await dbHelper.addPagosPorCliente(mes, anio, monto, widget.clienteId);
+    }
     cargarMesesCuadricula();
   }
 
   // ACTUALIZAR
   void actualizarPagoPorCliente(int idPago, double monto) async {
-    await dbHelper.updatePagosPorCliente(idPago, monto);
-    
+    final monedaControl = Provider.of<MoneyProvider>(context, listen: false);
+    if (monedaControl.moneda <= 3) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('No tienes suficientes monedas.')),
+      );
+    } else {
+      monedaControl.restar(4);
+      await dbHelper.updatePagosPorCliente(idPago, monto);
+    }
     cargarMesesCuadricula();
   }
 
@@ -105,6 +102,12 @@ class _PagosState extends State<Pagos> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        actions: [
+              Padding(
+                padding: const EdgeInsets.only(right: 20.0,top: 3.0),
+                child: Mostrarmoneda(),
+              )
+            ],
         title: Text(widget.clienteNombre),
       ),
       body:   Column(
@@ -219,6 +222,10 @@ class _PagosState extends State<Pagos> {
           ),
         ],
       ),
+      
+       bottomNavigationBar: Anunciobanner(idAnuncio: 'ca-app-pub-3503326553540884/4820268139')
+      
+      
     );
   }
 
