@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:negocio/clientes.dart';
-import 'package:negocio/db.dart';
+import 'package:negocio/controllers/NegociosController/negociosController.dart';
+import 'package:negocio/db/db.dart';
 import 'package:negocio/footer.dart';
 import 'package:negocio/moneda.dart';
 import 'package:negocio/mostrarMoneda.dart';
@@ -17,6 +18,7 @@ class Negocios extends StatefulWidget {
 class _NegociosState extends State<Negocios> {
   final TextEditingController nombreNegocio = TextEditingController();
   final dbHelper = DatabaseHelper();
+  late final NegociosController negociosController;
   List<Map<String, dynamic>> listaNegocios = [];
   String editAdd = '';
   final money = MoneyProvider();
@@ -24,64 +26,48 @@ class _NegociosState extends State<Negocios> {
   @override
   void initState() {
     super.initState();
+    negociosController = NegociosController(dbHelper);
     mostrarNegocios();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color.fromARGB(255, 123, 207, 255),
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
             floating: true,
             snap: true,
-            expandedHeight: 110,
-            backgroundColor: const Color.fromARGB(255, 0, 0, 0),
+            expandedHeight: 70,
             elevation: 0,
+            title: Text('Cobranzas',
+                style: TextStyle(
+                    color: const Color.fromARGB(255, 27, 105, 251),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 30)),
             actions: [
               Padding(
                 padding: const EdgeInsets.only(right: 20.0, top: 3.0),
                 child: Mostrarmoneda(),
               )
             ],
-            flexibleSpace: FlexibleSpaceBar(
-              title: Text(
-                'Cobranzas',
-                style:
-                    TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-              ),
-              centerTitle: true,
-              background: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Color.fromARGB(255, 27, 105, 251),
-                      Color.fromARGB(255, 65, 160, 255),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                ),
-              ),
-            ),
           ),
           listaNegocios.isEmpty
               ? SliverFillRemaining(
                   hasScrollBody: false,
                   child: Center(
                     child: Text(
-                      '''
-                      Registra tu Primer
-                             Negocio
-                      ''',
-                      style: TextStyle(fontSize: 22, color: Colors.grey),
+                      'Registra tu primer Negocio ',
+                      style: TextStyle(
+                          fontSize: 20,
+                          color: const Color.fromARGB(255, 93, 93, 93)),
                     ),
                   ),
                 )
               : SliverList(
                   delegate: SliverChildBuilderDelegate((context, index) {
                     final negocio = listaNegocios[index];
+                    /*
                     return GestureDetector(
                         onTap: () => Navigator.push(
                             context,
@@ -90,7 +76,19 @@ class _NegociosState extends State<Negocios> {
                                     negocioId: negocio['id'],
                                     nombreNegocio: negocio['name']))),
                         child: SizedBox(
-                            height: 100, child: mostrarCardNegocios(negocio)));
+                            height: 110, child: mostrarCardNegocios(negocio)));
+                            */
+                      return Column(
+                        children: [
+                          ListTile(
+                            minVerticalPadding: 25,
+                            title: Text(
+                              "d"
+                            ),
+                          )
+                        ],
+                      );
+
                   }, childCount: listaNegocios.length),
                 ),
         ],
@@ -274,55 +272,28 @@ class _NegociosState extends State<Negocios> {
 
   /* CRUD NEGOCIO */
 
-  void mostrarNegocios() async {
-    final datos = await dbHelper.mostrarNegocios();
-    try {
-      if (mounted) {
-        // Verifica que el widget siga montado
-        setState(() {
-          listaNegocios = datos;
-        });
-      }
-    } catch (e) {
-      print('Error al cargar negocios: $e');
-      if (mounted) {
-        setState(() {
-          listaNegocios = [];
-        });
-      }
+  Future<void> mostrarNegocios() async {
+    final datos = await negociosController.getNegocios();
+    if (mounted) {
+      // Verifica que el widget siga montado
+      setState(() {
+        listaNegocios = datos;
+      });
     }
   }
 
-  void agregarNegocio(String nombre) async {
-    final monedaControl = Provider.of<MoneyProvider>(context, listen: false);
-    if (monedaControl.moneda <= 4) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('No tienes suficientes monedas.')),
-      );
-    } else {
-      monedaControl.restar(5);
-      await dbHelper.addNegocio(nombre);
-    }
-    mostrarNegocios();
+  agregarNegocio(String nombre) async {
+    final ok = await negociosController.agregarNegocio(context, nombre);
+    if (ok) mostrarNegocios();
   }
 
   void editarNegocio(int id, String nombre) async {
-    final monedaControl =
-        Provider.of<MoneyProvider>(context, listen: false); //.restar(5);
-    if (monedaControl.moneda <= 4) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('No tienes suficientes monedas.')),
-      );
-    } else {
-      monedaControl.restar(5);
-      await dbHelper.editNegocio(id, nombre);
-    }
-
-    mostrarNegocios();
+    final ok = await negociosController.editarNegocio(context, id, nombre);
+    if (ok) mostrarNegocios();
   }
 
   void eliminarNegocio(int id) async {
-    await dbHelper.eliminarNegocioYClienteYPagos(id);
+    await negociosController.eliminarNegocio(id);
     mostrarNegocios();
   }
 }

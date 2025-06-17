@@ -2,14 +2,26 @@ import 'package:flutter/material.dart';
 import 'package:negocio/moneda.dart';
 import 'package:provider/provider.dart';
 
-class Mostrarmoneda extends StatelessWidget {
-  final void Function()? onTap;
-  const Mostrarmoneda({Key? key, this.onTap}) : super(key: key);
+class Mostrarmoneda extends StatefulWidget {
+  const Mostrarmoneda({Key? key}) : super(key: key);
+
+  @override
+  State<Mostrarmoneda> createState() => _MostrarmonedaState();
+}
+
+class _MostrarmonedaState extends State<Mostrarmoneda> {
+  DateTime? lastTap;
   @override
   Widget build(BuildContext context) {
     final moneda = Provider.of<MoneyProvider>(context);
+
+    
     return GestureDetector(
       onTap: () {
+        final now = DateTime.now();
+        //si pasaron menos de 3 segundos no hace nada
+        if(lastTap != null && now.difference(lastTap!).inSeconds < 4) return;
+        lastTap = now;
         Provider.of<MoneyProvider>(context, listen: false)
             .showAnuncioRecompenza(context);
       },

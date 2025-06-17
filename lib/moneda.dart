@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
-import 'package:negocio/db.dart';
-import 'package:path/path.dart';
+import 'package:negocio/db/db.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -39,7 +38,7 @@ class MoneyProvider extends ChangeNotifier {
   void showAnuncioRecompenza(BuildContext context) {
     RewardedAd.load(
         adUnitId: 'ca-app-pub-3503326553540884/6874164957',
-        // adUnitId: 'ca-app-pub-3940256099942544/5224354917',  PRUEBA
+        //adUnitId: 'ca-app-pub-3940256099942544/5224354917',  PRUEBA
         request: AdRequest(),
         rewardedAdLoadCallback:
             RewardedAdLoadCallback(onAdLoaded: (RewardedAd ad) {

@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:negocio/anuncioBanner.dart';
-import 'package:negocio/db.dart';
+import 'package:negocio/controllers/ClientesController/clientesController.dart';
+import 'package:negocio/db/db.dart';
 import 'package:negocio/footer.dart';
-import 'package:negocio/moneda.dart';
 import 'package:negocio/mostrarMoneda.dart';
 import 'package:negocio/pagos.dart';
-import 'package:provider/provider.dart';
 
 class Clientes extends StatefulWidget {
   final int negocioId;
@@ -21,55 +20,45 @@ class _ClientesState extends State<Clientes> {
   TextEditingController nombreCliente = TextEditingController();
   List<Map<String, dynamic>> listaClientes = [];
   final dbHelper = DatabaseHelper();
-
+  late final Clientescontroller clientescontroller;
   @override
   void initState() {
     super.initState();
+    clientescontroller = Clientescontroller(dbHelper);
     cargarClientes();
   }
 
-  void cargarClientes() async {
-    final data = await dbHelper.mostrarClientesPorNegocio(widget.negocioId);
-    setState(() {
-      listaClientes = data;
-    });
-  }
-
-  void agregarClientesPorNegocio(String nombre) async {
-    final monedaControl = Provider.of<MoneyProvider>(context, listen: false);
-    if (monedaControl.moneda <= 4) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('No tienes suficientes monedas.')),
-      );
-    } else {
-      monedaControl.restar(5);
-      await dbHelper.addClientesPorNegocio(
-        nombre,
-        widget.negocioId,
-      );
+  /*    ---    CARGAR    ---  */
+  Future<void> cargarClientes() async {
+    final datos = await clientescontroller.getClientes(widget.negocioId);
+    if (mounted) {
+      setState(() {
+        listaClientes = datos;
+      });
     }
-
-    cargarClientes();
-    //cargarPagosPorclientePorAnio();
-    nombreCliente.clear();
   }
 
+  /*    ---    AGREGAR    ---  */
+  agregarClientesPorNegocio(String nombre) async {
+    final ok = await clientescontroller.agregarClientePorNegocio(
+      context,
+      nombre,
+      widget.negocioId,
+    );
+    if (ok) cargarClientes();
+//    nombreCliente.clear();
+  }
+
+  /*    ---    EDITAR    ---  */
   void editarCliente(int id, String nombre) async {
-    final monedaControl = Provider.of<MoneyProvider>(context, listen: false);
-    if (monedaControl.moneda <= 4) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('No tienes suficientes monedas.')),
-      );
-    } else {
-      monedaControl.restar(5);
-      await dbHelper.aditClientes(nombre, id);
-    }
-   
-    cargarClientes();
+    final ok = await clientescontroller.editarCliente(context, id, nombre);
+
+    if (ok) cargarClientes();
   }
 
+  /*    ---    ELIMINAR    ---  */
   void eliminarClienteYPagos(int id) async {
-    await dbHelper.eliminarClienteYPagos(id);
+    await clientescontroller.eliminarClienteYPagos(id);
     cargarClientes();
   }
 
@@ -89,14 +78,13 @@ class _ClientesState extends State<Clientes> {
               onPressed: () => Navigator.pop(context), child: Text('Cancelar')),
           ElevatedButton(
               onPressed: () {
+                Navigator.pop(context);
                 if (nombreCliente.text.isNotEmpty) {
                   if (id == 0) {
                     agregarClientesPorNegocio(nombreCliente.text.trim());
                   } else if (id > 0) {
                     editarCliente(id, nombreCliente.text.trim());
                   }
-
-                  Navigator.pop(context);
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
@@ -142,10 +130,15 @@ class _ClientesState extends State<Clientes> {
         SliverAppBar(
           floating: true,
           snap: true,
-          expandedHeight: 110,
+          expandedHeight: 70,
           backgroundColor: const Color.fromARGB(
-              255, 26, 66, 97), //Color.fromARGB(255, 10, 26, 38),
+              255, 26, 66, 97), 
           elevation: 0,
+          title: Text( widget.nombreNegocio,style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 22
+                             )),
           actions: [
             Padding(
               padding: const EdgeInsets.only(right: 20.0, top: 3.0),
@@ -154,21 +147,6 @@ class _ClientesState extends State<Clientes> {
           ],
           iconTheme: IconThemeData(color: Colors.white),
           flexibleSpace: FlexibleSpaceBar(
-            title: Text(
-              widget.nombreNegocio,
-              style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: (widget.nombreNegocio.length < 15)
-                      ? 20
-                      : (widget.nombreNegocio.length < 20)
-                          ? 17
-                          : (widget.nombreNegocio.length < 30)
-                              ? 15
-                              : (widget.nombreNegocio.length < 50)
-                                  ? 13
-                                  : 12),
-            ),
             centerTitle: true,
             background: Container(
               decoration: BoxDecoration(
@@ -190,7 +168,7 @@ class _ClientesState extends State<Clientes> {
                 child: Center(
                   child: Text(
                     'No hay clientes registrados',
-                    style: TextStyle(fontSize: 20, color: Colors.grey),
+                    style: TextStyle(fontSize: 20, color: const Color.fromARGB(255, 118, 118, 118)),
                   ),
                 ),
               )
@@ -263,9 +241,10 @@ class _ClientesState extends State<Clientes> {
       bottomNavigationBar: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Anunciobanner(idAnuncio: 'ca-app-pub-3940256099942544/6300978111'),
+          Anunciobanner(idAnuncio: 'ca-app-pub-3503326553540884/1480397739'),
+          //Anunciobanner(idAnuncio: 'ca-app-pub-3940256099942544/6300978111'), prueba
           SizedBox(height: 15),
-          // Anunciobanner(idAnuncio: 'ca-app-pub-3503326553540884/1480397739'),  real
+
           AppFooter(),
         ],
       ),

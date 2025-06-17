@@ -143,7 +143,7 @@ class DatabaseHelper {
         conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
-  Future<void> aditClientes(String nombre, int id) async {
+  Future<void> editClientes(String nombre, int id) async {
     final db = await opendatabase();
     final values = {
       'nombre': nombre,

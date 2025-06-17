@@ -34,6 +34,8 @@ dev_dependencies:
 flutter:
   assets:
       - assets/img/cobrar.png
+      - assets/img/click.png
+      
   uses-material-design: true
  
 
